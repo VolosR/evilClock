@@ -82,6 +82,10 @@ String h,m,s;
 int day,month;
 String months[12]={"JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"};
 
+//Function
+int setFunction=0;
+int setFunctionMax=5;
+
 //settime variables
 bool setTimeDate=false;
 int setData[8];  //setHour,setMin,setSec,setDate,setMonth,setYear; SET REGION , SET BEEPER;
@@ -156,7 +160,7 @@ void setup()  // ##############  SETUP ##################
     pinMode(35,INPUT_PULLUP);
     auto cfg = M5.config();
     StickCP2.begin(cfg);
-    //StickCP2.Rtc.setDateTime( { { 2024, 2, 17 }, { 8, 20, 0 } } );
+    StickCP2.Rtc.setDateTime( { { 2024, 3, 22 }, { 12, 35, 0 } } );
 
      irsend.begin();
 
@@ -374,13 +378,46 @@ sprite.unloadFont();
 
 //stopwatch ################
   sprite.loadFont(middleFont);
-  sprite.setTextColor(TFT_BLACK,grays[4]);
-  sprite.setTextColor(grays[2],TFT_BLACK);
-  sprite.drawString(":",88-12,186);
-  sprite.drawString(":",88+12,186);
-  sprite.drawString(secc,88,186);
-  sprite.drawString(minn,88-24,186);
-  sprite.drawString(mill,88+24,186);
+
+  if (setFunction == 0)
+  {
+    sprite.setTextColor(TFT_BLACK,grays[4]);
+    sprite.setTextColor(grays[2],TFT_BLACK);
+    sprite.drawString(":",88-12,186);
+    sprite.drawString(":",88+12,186);
+    sprite.drawString(secc,88,186);
+    sprite.drawString(minn,88-24,186);
+    sprite.drawString(mill,88+24,186);
+  }
+
+  if (setFunction == 1)
+  {
+    sprite.setTextColor(TFT_BLACK,grays[4]);
+    sprite.setTextColor(grays[2],TFT_BLACK);
+    sprite.drawString("IR",88,186);
+  }
+
+  if (setFunction == 2)
+  {
+    sprite.setTextColor(TFT_BLACK,grays[4]);
+    sprite.setTextColor(grays[2],TFT_BLACK);
+    sprite.drawString("BT",88,186);
+  }
+
+  if (setFunction == 3)
+  {
+    sprite.setTextColor(TFT_BLACK,grays[4]);
+    sprite.setTextColor(grays[2],TFT_BLACK);
+    sprite.drawString("Set Time",88,186);
+  }
+
+  if (setFunction == 4)
+  {
+    sprite.setTextColor(TFT_BLACK,grays[4]);
+    sprite.setTextColor(grays[2],TFT_BLACK);
+    sprite.drawString("Set Brig",88,186);
+  }
+
   sprite.unloadFont();
 
 
@@ -427,7 +464,12 @@ sprite.unloadFont();
     sprite.setTextColor(grays[4],TFT_BLACK);
     sprite.drawString("SLEEP",9,202);
     sprite.setTextColor(grays[2],TFT_BLACK);
-    sprite.drawString("STOPWATCH",55,165);
+    
+    if (setFunction == 0)
+      sprite.drawString("STOPWATCH",55,165);
+    if (setFunction > 0)
+      sprite.drawString("FUNCTION",55,165);
+
     sprite.drawString("TIME AND DATE",12,14);
     
     //buzzer
@@ -541,20 +583,33 @@ void loop()    //##########################  LOOP  #############################
     volE=map(vol,3000,4180,0,5);
     auto dt = StickCP2.Rtc.getDateTime();
 
-  if(digitalRead(35)==0)
-  {setTimeDate=!setTimeDate;
-   setData[0]=dt.time.hours;
-   setData[1]=dt.time.minutes;
-   setData[2]=dt.time.seconds;
-   setData[3]=dt.date.date;
-   setData[4]=dt.date.month;
-   setData[5]=dt.date.year-2000;
-   setData[6]=Myregion;
-   setData[7]=buzzer;
+  if(digitalRead(35)==0 && setFunction==3)
+  {
+    setTimeDate=!setTimeDate;
+    setData[0]=dt.time.hours;
+    setData[1]=dt.time.minutes;
+    setData[2]=dt.time.seconds;
+    setData[3]=dt.date.date;
+    setData[4]=dt.date.month;
+    setData[5]=dt.date.year-2000;
+    setData[6]=Myregion;
+    setData[7]=buzzer;
 
     if(buzzer)
+      StickCP2.Speaker.tone(6000, 100);
+    delay(200);
+  } 
+
+  if(digitalRead(35)==0 && setFunction==4)
+  {
+    sleepTime=10;
+    b++; if(b==6) b=0;
+    EEPROM.write(0, b);
+    EEPROM.commit();
+    StickCP2.Display.setBrightness(brightnes[b]);
+    if(buzzer)
     StickCP2.Speaker.tone(6000, 100);
-   delay(200);} 
+  } 
 
 
   if(slp)
@@ -574,14 +629,13 @@ if(rtc.getMillis()/10<10)  mill="0"+String(rtc.getMillis()/10);  else mill=Strin
    
 
 if (StickCP2.BtnB.wasPressed()) {
-      sleepTime=10;
-      b++; if(b==6) b=0;
-      EEPROM.write(0, b);
-      EEPROM.commit();
-      StickCP2.Display.setBrightness(brightnes[b]);
-      if(buzzer)
-      StickCP2.Speaker.tone(6000, 100);
+    setFunction++;
+    sleepTime=10;
+    if (setFunction >=setFunctionMax)
+    {
+      setFunction=0;
     }
+  }
 
 if (StickCP2.BtnA.wasPressed()) {
       sleepTime=10;
